@@ -1,0 +1,54 @@
+'Jamal Mansuri 7/17/2023
+'The script uses two worksheets: "Results" as wsInput (data source) and a newly created "R_Output" as wsOutput (where reformatted data is stored).
+'The full path of a file is retrieved from cell B3 in wsInput, and the filename is extracted from this path.
+'Headers for the new sheet are defined and placed in the first row of wsOutput.
+'The macro iterates over each row from row 9 to the last row with data in column 1 in wsInput.
+'If columns 1 and 2 in a row have data, corresponding information (including the experiment file name, well, sample name, target name, and Ct) is written to wsOutput.
+'The wsOutput is saved as a CSV file in the location "C:\Example", with the filename derived from expFileName.
+'The newly created workbook is closed without saving changes as the data has already been exported to a CSV file.
+
+Sub CopyData()
+
+    Dim wb As Workbook
+    Set wb = ThisWorkbook
+    
+    Dim wsInput As Worksheet
+    Set wsInput = wb.Sheets("Results")
+    
+    Dim wsOutput As Worksheet
+    Set wsOutput = wb.Sheets.Add
+    wsOutput.Name = "R_Output"
+    
+    Dim expFileName As String
+    Dim fullPath As String
+    fullPath = wsInput.Range("B3").Value
+    expFileName = Mid(fullPath, InStrRev(fullPath, "\") + 1, Len(fullPath) - InStrRev(fullPath, "\") - 4) '-4 to exclude '.eds'
+    
+    'Define the headers for the new sheet
+    wsOutput.Range("A1:E1").Value = Array("Experiment File Name", "Well", "Sample Name", "Target Name", "Ct")
+    
+    'Skip the first 8 rows in the input sheet, because they contain headers
+    Dim r As Long
+    Dim i As Long
+    i = 2 'start writing from second row in the output sheet
+    For r = 9 To wsInput.Cells(Rows.Count, 1).End(xlUp).Row
+        If wsInput.Cells(r, 1).Value <> "" And wsInput.Cells(r, 2).Value <> "" Then
+            wsOutput.Cells(i, 1).Value = expFileName
+            wsOutput.Cells(i, 2).Value = wsInput.Cells(r, 1).Value
+            wsOutput.Cells(i, 3).Value = wsInput.Cells(r, 2).Value
+            wsOutput.Cells(i, 4).Value = wsInput.Cells(r, 3).Value
+            wsOutput.Cells(i, 5).Value = wsInput.Cells(r, 7).Value
+            i = i + 1
+        End If
+    Next r
+    
+    'Set the file path where you want to save the CSV file
+    Dim CSVFilePath As String
+    CSVFilePath = "C:\Example" & expFileName & ".csv"
+
+    'Save the output worksheet as a CSV file
+    wsOutput.Copy
+    ActiveWorkbook.SaveAs Filename:=CSVFilePath, FileFormat:=xlCSV
+    ActiveWorkbook.Close SaveChanges:=False
+
+End Sub
